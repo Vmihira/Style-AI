@@ -907,62 +907,13 @@ const categories = [
   "activewear",
 ]
 
-const colors = [
-  "white",
-  "black",
-  "blue",
-  "red",
-  "pink",
-  "gold",
-  "silver",
-  "brown",
-  "beige",
-  "navy",
-  "gray",
-  "green",
-  "purple",
-  "yellow",
-  "burgundy",
-  "cream",
-  "tan",
-  "multicolor",
-  "floral",
-  "indigo",
-  "peach",
-  "rose-gold",
-  "nude",
-]
 
-const themes = [
-  "elegant",
-  "casual",
-  "professional",
-  "edgy",
-  "classic",
-  "bold",
-  "natural",
-  "luxury",
-  "trendy",
-  "vintage",
-  "minimalist",
-  "bohemian",
-  "modern",
-  "glamorous",
-  "traditional",
-  "festive",
-  "athletic",
-  "dramatic",
-  "glam",
-  "delicate",
-  "retro",
-]
 
 export default function GalleryPage() {
   const [selectedItems, setSelectedItems] = useState<FashionItem[]>([])
   const [filteredItems, setFilteredItems] = useState<FashionItem[]>(fashionItems)
   const [selectedCategory, setSelectedCategory] = useState<string>("all")
-  const [selectedColor, setSelectedColor] = useState<string>("all")
-  const [selectedTheme, setSelectedTheme] = useState<string>("all")
+
   const [hoveredItem, setHoveredItem] = useState<string | null>(null)
   const router = useRouter()
 
@@ -972,15 +923,9 @@ export default function GalleryPage() {
     if (selectedCategory !== "all") {
       filtered = filtered.filter((item) => item.category === selectedCategory)
     }
-    if (selectedColor !== "all") {
-      filtered = filtered.filter((item) => item.color === selectedColor)
-    }
-    if (selectedTheme !== "all") {
-      filtered = filtered.filter((item) => item.theme === selectedTheme)
-    }
-
+   
     setFilteredItems(filtered)
-  }, [selectedCategory, selectedColor, selectedTheme])
+  }, [selectedCategory])
 
   const handleItemSelect = (item: FashionItem) => {
     const categoryAlreadySelected = selectedItems.some((selected) => selected.category === item.category)
