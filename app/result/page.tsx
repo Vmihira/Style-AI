@@ -76,7 +76,7 @@ export default function ResultPage() {
 
       console.log("Sending items to backend:", items)
 
-      const response = await fetch("http://localhost:5000/generate-style", {
+      const response = await fetch("https://style-ai-hfip.onrender.com/generate-style", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -102,7 +102,7 @@ export default function ResultPage() {
 
         // Create image URL with timestamp to avoid caching issues
         const timestamp = new Date().getTime()
-        const imageUrl = `http://localhost:5000/recent-image?t=${timestamp}`
+        const imageUrl = `https://style-ai-hfip.onrender.com/recent-image?t=${timestamp}`
         setImageUrl(imageUrl)
 
         console.log("Image generation completed successfully!")
@@ -113,7 +113,7 @@ export default function ResultPage() {
       }
     } catch (err) {
       console.error("Error generating image:", err)
-      setError("Failed to connect to the AI service. Please make sure the backend is running on http://localhost:5000")
+      setError("Failed to connect to the AI service. Please make sure the backend is running on https://style-ai-hfip.onrender.com")
     } finally {
       setIsGenerating(false)
     }

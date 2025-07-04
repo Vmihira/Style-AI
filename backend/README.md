@@ -22,7 +22,7 @@ cp .env.example .env
 python app.py
 \`\`\`
 
-The backend will start on `http://localhost:5000`
+The backend will start on `https://style-ai-hfip.onrender.com`
 
 ## API Endpoints
 
