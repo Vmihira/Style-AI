@@ -21,14 +21,14 @@ os.makedirs('generated_images', exist_ok=True)
 def save_binary_file(file_name, data):
     """Save binary data to file"""
     image_data = base64.b64decode(data)  # data_buffer = base64 string
-
-# Step 2: Wrap in BytesIO
+    # Step 2: Wrap in BytesIO
     image_stream = io.BytesIO(image_data)
-
-# Step 3: Open with Pillow
+    # Step 3: Open with Pillow
     image = Image.open(image_stream)
     image_path = os.path.join('generated_images', file_name)
-    image.save("recent.png")
+    image.save("recent.png")  # Save in root directory
+    print(f"Image saved as recent.png")
+    return "recent.png"
 
 def create_style_prompt(selected_items):
     """Create a detailed prompt for image generation based on selected fashion items"""
@@ -46,7 +46,7 @@ def create_style_prompt(selected_items):
     
     # Create comprehensive prompt
     prompt = f"""
-    Create a high-quality, professional fashion photograph of a complete styled outfit.
+    Create a high-quality, professional fashion photograph of a complete styled outfit and showcase it on a woman model.
 
     OUTFIT COMPONENTS:
     {outfit_components}
@@ -57,6 +57,7 @@ def create_style_prompt(selected_items):
     - Style Themes: {', '.join(themes)}
 
     VISUAL REQUIREMENTS:
+    - Fashion outfit should be shown on a woman model
     - Professional fashion photography studio setting
     - Clean, well-lit environment with neutral white/gray background
     - Model wearing the complete coordinated outfit
@@ -66,7 +67,7 @@ def create_style_prompt(selected_items):
     - Modern fashion magazine aesthetic
     - Portrait orientation (3:4 aspect ratio)
 
-    Generate a stunning, cohesive fashion image that combines all these elements into one perfectly styled look.
+    Generate a stunning, cohesive fashionable image of a woman whose outfit combines all these elements into one perfectly styled look.
     """
     
     return prompt.strip()
@@ -123,7 +124,7 @@ def generate_image_with_gemini(prompt):
                 
                 inline_data = chunk.candidates[0].content.parts[0].inline_data
                 data_buffer = inline_data.data
-                file_extension = mimetypes.guess_extension(inline_data.mime_type) #or '.jpg'
+                file_extension = mimetypes.guess_extension(inline_data.mime_type) or '.png'
                 
                 # Save to generated_images directory
                 full_file_path = f"{file_name}{file_extension}"
@@ -139,8 +140,8 @@ def generate_image_with_gemini(prompt):
         if generated_file_path:
             return {
                 'image_path': generated_file_path,
-                'image_filename': os.path.basename(generated_file_path),
-                'image_id': image_id
+                'image_filename': 'recent.png',
+                'image_id': 'recent'
             }
         else:
             print("No image was generated")
@@ -200,10 +201,9 @@ def generate_style():
             }), 500
 
         # Convert generated image to base64
-        # Override to always use 'recent.png'
-        recent_image_path = os.path.join("generated_images", "recent.png")
-
-        # Make sure the file exists (fallback handling)
+        recent_image_path = "recent.png"
+        
+        # Make sure the file exists
         if not os.path.exists(recent_image_path):
             return jsonify({
                 'success': False,
@@ -218,7 +218,6 @@ def generate_style():
                 'success': False,
                 'error': 'Failed to process and encode recent.png.'
             }), 500
-
 
         # Create success response
         response_data = {
@@ -239,8 +238,7 @@ def generate_style():
                 'image_id': 'recent',
                 'mime_type': 'image/png'
             },
-            'image_url': 'recent.png'
-
+            'image_url': '/recent-image'
         }
 
         print("Successfully generated and processed image. Sending response.")
@@ -253,10 +251,33 @@ def generate_style():
             'error': f'Server error: {str(e)}'
         }), 500
 
+@app.route('/recent-image', methods=['GET'])
+def serve_recent_image():
+    """Serve the most recent generated image"""
+    try:
+        recent_image_path = "recent.png"
+        if os.path.exists(recent_image_path):
+            return send_file(recent_image_path, mimetype='image/png')
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'Recent image not found.'
+            }), 404
+    except Exception as e:
+        print(f"Error serving recent image: {e}")
+        return jsonify({
+            'success': False,
+            'error': 'Failed to serve recent image.'
+        }), 500
+
 @app.route('/generated-image/<image_id>', methods=['GET'])
 def serve_generated_image(image_id):
     """Serve generated images by ID"""
     try:
+        # For recent image
+        if image_id == 'recent':
+            return serve_recent_image()
+            
         # Find the image file with the given ID
         for filename in os.listdir('generated_images'):
             if image_id in filename:
@@ -284,7 +305,8 @@ def health_check():
         'message': 'StyleAI Backend with Gemini API is running',
         'timestamp': datetime.now().isoformat(),
         'api_configured': bool(os.environ.get("GEMINI_API_KEY")),
-        'model': 'gemini-2.0-flash-preview-image-generation'
+        'model': 'gemini-2.0-flash-preview-image-generation',
+        'recent_image_exists': os.path.exists('recent.png')
     }), 200
 
 if __name__ == '__main__':
@@ -298,7 +320,7 @@ if __name__ == '__main__':
     
     print("Starting StyleAI Flask Backend...")
     print("Model: gemini-2.0-flash-preview-image-generation")
-    print("Generated images will be saved in: ./generated_images/")
+    print("Generated images will be saved as: recent.png")
     print("Server will run on: http://localhost:5000")
     
     # Run the Flask app

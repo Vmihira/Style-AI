@@ -254,7 +254,7 @@ const fashionItems: FashionItem[] = [
       "High-waisted pencil skirt in stretch wool blend with back walking slit and invisible side zipper for professional polish",
     color: "black",
     theme: "professional",
-    image: "/images/skirts/pencil-black.png",
+    image: "/images/skirts/pencil-black.jpg",
   },
   {
     id: "s2",
@@ -1054,38 +1054,6 @@ export default function GalleryPage() {
                 {categories.map((category) => (
                   <option key={category} value={category}>
                     {category.charAt(0).toUpperCase() + category.slice(1)}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-2 text-gray-700">Color</label>
-              <select
-                value={selectedColor}
-                onChange={(e) => setSelectedColor(e.target.value)}
-                className="w-full bg-white border border-rose-200 rounded-lg px-3 py-2 text-gray-800 focus:border-rose-400 focus:outline-none focus:ring-2 focus:ring-rose-200"
-              >
-                <option value="all">All Colors</option>
-                {colors.map((color) => (
-                  <option key={color} value={color}>
-                    {color.charAt(0).toUpperCase() + color.slice(1)}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-2 text-gray-700">Theme</label>
-              <select
-                value={selectedTheme}
-                onChange={(e) => setSelectedTheme(e.target.value)}
-                className="w-full bg-white border border-rose-200 rounded-lg px-3 py-2 text-gray-800 focus:border-rose-400 focus:outline-none focus:ring-2 focus:ring-rose-200"
-              >
-                <option value="all">All Themes</option>
-                {themes.map((theme) => (
-                  <option key={theme} value={theme}>
-                    {theme.charAt(0).toUpperCase() + theme.slice(1)}
                   </option>
                 ))}
               </select>
