@@ -3,7 +3,7 @@ import mimetypes
 import os
 import uuid
 from datetime import datetime
-from flask import Flask, request, jsonify, send_file
+from flask import Flask, request, jsonify
 from flask_cors import CORS
 from google import genai
 import base64
@@ -15,20 +15,44 @@ from google.genai import types
 app = Flask(__name__)
 CORS(app)  # Enable Cross-Origin Resource Sharing
 
-# Create directories for storing generated images
-os.makedirs('generated_images', exist_ok=True)
+# In-memory storage for the most recent generated image
+recent_image_data = {
+    'base64': None,
+    'mime_type': None,
+    'timestamp': None,
+    'image_id': None
+}
 
-def save_binary_file(file_name, data):
-    """Save binary data to file"""
-    image_data = base64.b64decode(data)  # data_buffer = base64 string
-    # Step 2: Wrap in BytesIO
-    image_stream = io.BytesIO(image_data)
-    # Step 3: Open with Pillow
-    image = Image.open(image_stream)
-    image_path = os.path.join('generated_images', file_name)
-    image.save("recent.png")  # Save in root directory
-    print(f"Image saved as recent.png")
-    return "recent.png"
+def process_image_data(data, mime_type):
+    """Process binary image data and return base64 string"""
+    try:
+        # Decode base64 data
+        image_data = base64.b64decode(data)
+        
+        # Wrap in BytesIO
+        image_stream = io.BytesIO(image_data)
+        
+        # Open with Pillow to validate and potentially convert
+        image = Image.open(image_stream)
+        
+        # Convert to RGB if necessary (for PNG compatibility)
+        if image.mode != 'RGB':
+            image = image.convert('RGB')
+        
+        # Save to BytesIO as PNG
+        output_stream = io.BytesIO()
+        image.save(output_stream, format='PNG')
+        output_stream.seek(0)
+        
+        # Convert to base64
+        base64_image = base64.b64encode(output_stream.getvalue()).decode('utf-8')
+        
+        print(f"Image processed successfully, size: {len(base64_image)} characters")
+        return base64_image
+        
+    except Exception as e:
+        print(f"Error processing image data: {e}")
+        return None
 
 def create_style_prompt(selected_items):
     """Create a detailed prompt for image generation based on selected fashion items"""
@@ -73,7 +97,7 @@ def create_style_prompt(selected_items):
     return prompt.strip()
 
 def generate_image_with_gemini(prompt):
-    """Generate image using Gemini API based on the provided prompt"""
+    """Generate image using Gemini API and return base64 data directly"""
     try:
         print(f"Generating image with prompt: {prompt[:100]}...")
         
@@ -97,10 +121,8 @@ def generate_image_with_gemini(prompt):
             response_mime_type="text/plain",
         )
         
-        # Generate unique filename
+        # Generate unique image ID
         image_id = str(uuid.uuid4())
-        file_index = 0
-        generated_file_path = None
         
         # Generate content using streaming
         for chunk in client.models.generate_content_stream(
@@ -119,46 +141,42 @@ def generate_image_with_gemini(prompt):
             if (chunk.candidates[0].content.parts[0].inline_data and 
                 chunk.candidates[0].content.parts[0].inline_data.data):
                 
-                file_name = f"style_{image_id}_{file_index}"
-                file_index += 1
-                
                 inline_data = chunk.candidates[0].content.parts[0].inline_data
                 data_buffer = inline_data.data
-                file_extension = mimetypes.guess_extension(inline_data.mime_type) or '.png'
+                mime_type = inline_data.mime_type
                 
-                # Save to generated_images directory
-                full_file_path = f"{file_name}{file_extension}"
-                generated_file_path = save_binary_file(full_file_path, data_buffer)
+                # Process image data directly in memory
+                base64_image = process_image_data(data_buffer, mime_type)
                 
-                print(f"Image generated successfully: {generated_file_path}")
-                break
+                if base64_image:
+                    # Store in memory
+                    global recent_image_data
+                    recent_image_data = {
+                        'base64': base64_image,
+                        'mime_type': 'image/png',
+                        'timestamp': datetime.now().isoformat(),
+                        'image_id': image_id
+                    }
+                    
+                    print(f"Image generated successfully: {image_id}")
+                    return {
+                        'image_base64': base64_image,
+                        'image_id': image_id,
+                        'mime_type': 'image/png'
+                    }
+                else:
+                    print("Failed to process image data")
+                    return None
             else:
                 # Print any text output
                 if hasattr(chunk, 'text') and chunk.text:
                     print(f"API Response: {chunk.text}")
         
-        if generated_file_path:
-            return {
-                'image_path': generated_file_path,
-                'image_filename': 'recent.png',
-                'image_id': 'recent'
-            }
-        else:
-            print("No image was generated")
-            return None
+        print("No image was generated")
+        return None
             
     except Exception as e:
         print(f"Error generating image with Gemini: {e}")
-        return None
-
-def image_to_base64(image_path):
-    """Convert image file to base64 string"""
-    try:
-        with open(image_path, "rb") as image_file:
-            encoded_string = base64.b64encode(image_file.read()).decode("utf-8")
-        return encoded_string
-    except Exception as e:
-        print(f"Error converting image to base64: {e}")
         return None
 
 @app.route('/generate-style', methods=['POST'])
@@ -189,6 +207,8 @@ def generate_style():
 
         # Create the prompt for AI
         style_prompt = create_style_prompt(selected_items)
+        print("This is the prompt===============================================================================================")
+        print(style_prompt)
         print(f"Generated prompt length: {len(style_prompt)} characters")
 
         # Generate image using Gemini API
@@ -200,26 +220,7 @@ def generate_style():
                 'error': 'Failed to generate image with AI. Please try again.'
             }), 500
 
-        # Convert generated image to base64
-        recent_image_path = "recent.png"
-        
-        # Make sure the file exists
-        if not os.path.exists(recent_image_path):
-            return jsonify({
-                'success': False,
-                'error': 'recent.png not found on the server.'
-            }), 500
-
-        # Encode recent.png into base64
-        base64_image = image_to_base64(recent_image_path)
-
-        if not base64_image:
-            return jsonify({
-                'success': False,
-                'error': 'Failed to process and encode recent.png.'
-            }), 500
-
-        # Create success response
+        # Create success response with image data
         response_data = {
             'success': True,
             'message': 'Style generated successfully!',
@@ -233,12 +234,10 @@ def generate_style():
             },
             'timestamp': datetime.now().isoformat(),
             'image_data': {
-                'base64': base64_image,
-                'filename': 'recent.png',
-                'image_id': 'recent',
-                'mime_type': 'image/png'
-            },
-            'image_url': '/recent-image'
+                'base64': image_result['image_base64'],
+                'image_id': image_result['image_id'],
+                'mime_type': image_result['mime_type']
+            }
         }
 
         print("Successfully generated and processed image. Sending response.")
@@ -253,16 +252,26 @@ def generate_style():
 
 @app.route('/recent-image', methods=['GET'])
 def serve_recent_image():
-    """Serve the most recent generated image"""
+    """Serve the most recent generated image from memory"""
     try:
-        recent_image_path = "recent.png"
-        if os.path.exists(recent_image_path):
-            return send_file(recent_image_path, mimetype='image/png')
-        else:
+        global recent_image_data
+        
+        if recent_image_data['base64'] is None:
             return jsonify({
                 'success': False,
-                'error': 'Recent image not found.'
+                'error': 'No recent image available.'
             }), 404
+        
+        return jsonify({
+            'success': True,
+            'image_data': {
+                'base64': recent_image_data['base64'],
+                'mime_type': recent_image_data['mime_type'],
+                'image_id': recent_image_data['image_id'],
+                'timestamp': recent_image_data['timestamp']
+            }
+        }), 200
+        
     except Exception as e:
         print(f"Error serving recent image: {e}")
         return jsonify({
@@ -272,18 +281,21 @@ def serve_recent_image():
 
 @app.route('/generated-image/<image_id>', methods=['GET'])
 def serve_generated_image(image_id):
-    """Serve generated images by ID"""
+    """Serve generated images by ID from memory"""
     try:
-        # For recent image
-        if image_id == 'recent':
-            return serve_recent_image()
-            
-        # Find the image file with the given ID
-        for filename in os.listdir('generated_images'):
-            if image_id in filename:
-                image_path = os.path.join('generated_images', filename)
-                if os.path.exists(image_path):
-                    return send_file(image_path, mimetype='image/jpeg')
+        global recent_image_data
+        
+        # Check if the requested image ID matches the recent image
+        if recent_image_data['image_id'] == image_id and recent_image_data['base64'] is not None:
+            return jsonify({
+                'success': True,
+                'image_data': {
+                    'base64': recent_image_data['base64'],
+                    'mime_type': recent_image_data['mime_type'],
+                    'image_id': recent_image_data['image_id'],
+                    'timestamp': recent_image_data['timestamp']
+                }
+            }), 200
         
         return jsonify({
             'success': False,
@@ -300,13 +312,16 @@ def serve_generated_image(image_id):
 @app.route('/health', methods=['GET'])
 def health_check():
     """Health check endpoint"""
+    global recent_image_data
+    
     return jsonify({
         'status': 'healthy',
-        'message': 'StyleAI Backend with Gemini API is running',
+        'message': 'StyleAI Backend with Gemini API is running (No file saving)',
         'timestamp': datetime.now().isoformat(),
         'api_configured': bool(os.environ.get("GEMINI_API_KEY")),
         'model': 'gemini-2.0-flash-preview-image-generation',
-        'recent_image_exists': os.path.exists('recent.png')
+        'recent_image_available': recent_image_data['base64'] is not None,
+        'recent_image_timestamp': recent_image_data['timestamp']
     }), 200
 
 if __name__ == '__main__':
@@ -318,9 +333,9 @@ if __name__ == '__main__':
     else:
         print("✅ Gemini API key configured")
     
-    print("Starting StyleAI Flask Backend...")
+    print("Starting StyleAI Flask Backend (No File Saving)...")
     print("Model: gemini-2.0-flash-preview-image-generation")
-    print("Generated images will be saved as: recent.png")
+    print("Images will be processed in memory and sent directly to frontend")
     print("Server will run on: http://localhost:5000")
     
     # Run the Flask app
