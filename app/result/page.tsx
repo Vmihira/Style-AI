@@ -37,12 +37,6 @@ interface StyleAnalysis {
   items_used: string[];
 }
 
-interface DebugInfo {
-  original_size: number;
-  optimized_size: number;
-  base64_length: number;
-}
-
 interface ApiResponse {
   success: boolean;
   message?: string;
@@ -50,7 +44,6 @@ interface ApiResponse {
   generated_description?: string;
   style_analysis?: StyleAnalysis;
   image_data?: GeneratedImageData;
-  debug_info?: DebugInfo;
 }
 
 export default function ResultPage() {
@@ -65,9 +58,7 @@ export default function ResultPage() {
   const [generatedDescription, setGeneratedDescription] = useState<string>("");
   const [imageLoadError, setImageLoadError] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
-  const [retryCount, setRetryCount] = useState(0);
   const [generationProgress, setGenerationProgress] = useState("");
-  const [debugInfo, setDebugInfo] = useState<DebugInfo | null>(null);
   const [imageBlob, setImageBlob] = useState<string | null>(null);
 
    useEffect(() => {
@@ -156,22 +147,25 @@ export default function ResultPage() {
           setGeneratedImageData(result.image_data);
           setStyleAnalysis(result.style_analysis);
           setGeneratedDescription(result.generated_description);
-          setDebugInfo(result.debug_info || null);
           setGenerationProgress("Image ready!");
         } else {
           throw new Error("Incomplete data received from the server.");
         }
-      } catch (err: any) {
+       } catch (err: unknown) {
         console.error("Error generating image:", err);
         let errorMessage = "Failed to generate image. Please try again.";
-        if (err.message.includes("Failed to fetch")) {
-          errorMessage =
-            "Could not connect to the backend. Is it running on port 5000?";
-        } else {
-          errorMessage = err.message;
+
+        if (err instanceof Error) {
+          if (err.message.includes("Failed to fetch")) {
+            errorMessage = "Could not connect to the backend. Is it running on port 5000?";
+          } else {
+            errorMessage = err.message;
+          }
         }
+
         setError(errorMessage);
-      } finally {
+      }
+  finally {
         setIsGenerating(false);
         setGenerationProgress("");
       }
@@ -181,7 +175,6 @@ export default function ResultPage() {
 
   const handleRegenerate = useCallback(() => {
     if (selectedItems.length > 0) {
-      setRetryCount((prev) => prev + 1);
       generateStyleImage(selectedItems);
     }
   }, [selectedItems, generateStyleImage]);
@@ -221,19 +214,22 @@ export default function ResultPage() {
     console.log("Image loaded successfully in UI!");
   }, []);
 
-  const handleImageError = useCallback(
-    (e: any) => {
-      setImageLoadError(true);
-      setImageLoaded(false);
-      console.error("Failed to load generated image in UI:", e);
 
-      if (imageBlob && generatedImageData) {
-        console.log("Blob URL failed, trying base64 fallback...");
-        setImageBlob(null);
-      }
-    },
-    [imageBlob, generatedImageData]
-  );
+
+const handleImageError = useCallback(
+  (e: React.SyntheticEvent<HTMLImageElement>) => {
+    setImageLoadError(true);
+    setImageLoaded(false);
+    console.error("Failed to load generated image in UI:", e);
+
+    if (imageBlob && generatedImageData) {
+      console.log("Blob URL failed, trying base64 fallback...");
+      setImageBlob(null);
+    }
+  },
+  [imageBlob, generatedImageData]
+);
+
 
   const generateStyleDescription = useCallback(() => {
     if (generatedDescription) {

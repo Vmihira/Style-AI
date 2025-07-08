@@ -525,7 +525,7 @@ const fashionItems: FashionItem[] = [
     id: "jew7",
     category: "jewelry",
     name: "Charm Anklet",
-    description: "Delicate chain anklet with dangling star charms in rose gold finish for bohemian beach vibes",
+    description: "Delicate chain anklet for the foot with dangling star charms in rose gold finish for bohemian beach vibes",
     color: "rose-gold",
     theme: "delicate",
     image: "/images/jewelry/charm-anklet-rose-gold.png",
