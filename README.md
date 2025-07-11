@@ -1,36 +1,28 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Style AI 👗✨
 
-## Getting Started
+**Style AI** is a fashion-forward web application that uses **Generative AI** to create stunning, customized outfit images based on user-selected clothing categories. Built with **Next.js** (frontend), **Flask** (backend), and **AI models**, Style AI lets users explore, mix, and visualize unique outfit combinations — all worn by an AI-generated woman model.
 
-First, run the development server:
+## 🖼️ Features
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- 🌐 Beautiful landing page to introduce the experience
+- 🧥 Outfit selection interface with multiple categories (e.g., tops, bottoms, accessories)
+- 🤖 AI-powered image generation that combines selected outfits into one fashionable look
+- 🔁 Option to regenerate the image for fresh styles
+- 💾 Ability to save and download the final AI-generated outfit image
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🔧 Tech Stack
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Layer        | Technology     |
+|-------------|----------------|
+| Frontend     | Next.js, Tailwind CSS |
+| Backend      | Flask (Python) |
+| AI Integration | Generative AI (via image model API) |
+| Styling      | Responsive, modern UI/UX design |
+| Hosting/Deployment | Vercel (frontend) Render (backend) |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🚀 How It Works
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. **Landing Page**: Clean, engaging introduction to the Style AI experience.
+2. **Selection Page**: Users choose outfit elements from various categories.
+3. **Image Generation Page**: AI combines the selections into a single, wearable, fashion-forward image.
+4. **Interaction**: Users can regenerate, save, or download the image.
