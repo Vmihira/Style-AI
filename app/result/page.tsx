@@ -114,7 +114,7 @@ export default function ResultPage() {
       try {
         setGenerationProgress("Connecting to AI service...");
 
-        const response = await fetch("https://style-ai-hfip.onrender.com/generate-style", {
+        const response = await fetch("https://style-backend-yuy3.onrender.com/generate-style", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
